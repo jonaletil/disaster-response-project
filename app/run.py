@@ -8,11 +8,11 @@ from nltk.tokenize import word_tokenize
 from flask import Flask
 from flask import render_template, request, jsonify
 from plotly.graph_objs import Bar
-from sklearn.externals import joblib
+import joblib
 from sqlalchemy import create_engine
 
-
 app = Flask(__name__)
+
 
 def tokenize(text):
     tokens = word_tokenize(text)
@@ -25,51 +25,104 @@ def tokenize(text):
 
     return clean_tokens
 
+
 # load data
-engine = create_engine('sqlite:///../data/YourDatabaseName.db')
-df = pd.read_sql_table('YourTableName', engine)
+engine = create_engine('sqlite:///../data/DisasterResponse.db')
+df = pd.read_sql_table('DisasterResponse', engine)
 
 # load model
-model = joblib.load("../models/your_model_name.pkl")
+model = joblib.load("../models/classifier.pkl")
 
 
 # index webpage displays cool visuals and receives user input text for model
 @app.route('/')
 @app.route('/index')
 def index():
-    
     # extract data needed for visuals
-    # TODO: Below is an example - modify to extract data for your own visuals
     genre_counts = df.groupby('genre').count()['message']
     genre_names = list(genre_counts.index)
-    
+
+    # message counts by category
+    category_counts = df[df.columns[4:]].sum().sort_values(ascending=False)
+    category_name = list(category_counts.index)
+
+    # Distribution of Message Genres in Top 5 categories
+    category_labels = df[df.columns[4:]].sum().sort_values(ascending=False).index
+    df_genre = df.groupby('genre')[category_labels].sum().reset_index()
+    df_genre = df_genre.drop(columns=['genre']).rename(index={0: 'direct', 1: 'news', 2: 'social'})
+
     # create visuals
-    # TODO: Below is an example - modify to create your own visuals
-    graphs = [
+    graphs = [{
+        'data': [
+            Bar(
+                x=genre_names,
+                y=genre_counts
+            )],
+        'layout': {
+            'title': 'Distribution of Message Genres',
+            'yaxis': {
+                'title': "Count"
+            },
+            'xaxis': {
+                'title': "Genre"
+            },
+            'template': "seaborn"
+        }
+    },
         {
             'data': [
                 Bar(
-                    x=genre_names,
-                    y=genre_counts
-                )
-            ],
-
+                    x=category_name,
+                    y=category_counts
+                )],
             'layout': {
-                'title': 'Distribution of Message Genres',
+                'title': 'Distribution of Message Categories',
                 'yaxis': {
                     'title': "Count"
                 },
                 'xaxis': {
-                    'title': "Genre"
-                }
+                    'title': "Category",
+                    'tickangle': -25
+                },
+                'template': "seaborn"
+            }
+        },
+        {
+            'data': [
+                Bar(
+                    x=category_labels[:5],
+                    y=df_genre.iloc[0],
+                    name='Direct'
+                ),
+                Bar(
+                    x=category_labels[:5],
+                    y=df_genre.iloc[1],
+                    name='News'
+                ),
+                Bar(
+                    x=category_labels[:5],
+                    y=df_genre.iloc[2],
+                    name='Social'
+                )
+            ],
+            'layout': {
+                'title': 'Distribution of Message Genres in Top 5 categories',
+                'yaxis': {
+                    'title': "Count"
+                },
+                'xaxis': {
+                    'title': "Categories",
+                    'tickangle': -35
+                },
+                'barmode': 'group'
             }
         }
     ]
-    
+
     # encode plotly graphs in JSON
     ids = ["graph-{}".format(i) for i, _ in enumerate(graphs)]
     graphJSON = json.dumps(graphs, cls=plotly.utils.PlotlyJSONEncoder)
-    
+
     # render web page with plotly graphs
     return render_template('master.html', ids=ids, graphJSON=graphJSON)
 
@@ -78,7 +131,7 @@ def index():
 @app.route('/go')
 def go():
     # save user input in query
-    query = request.args.get('query', '') 
+    query = request.args.get('query', '')
 
     # use model to predict classification for query
     classification_labels = model.predict([query])[0]

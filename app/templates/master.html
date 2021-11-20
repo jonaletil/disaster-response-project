@@ -41,7 +41,7 @@
                 <form action="/go" method="get">
                     <input type="text" class="form-control form-control-lg" name="query" placeholder="Enter a message to classify">
                     <div class="col-lg-offset-5">
-                        <button type="submit" class="btn btn-lg btn-success">Classify Message</button>
+                        <button style="margin: 20px 0" type="submit" class="btn btn-lg btn-success">Classify Message</button>
                     </div>
                 </form>
             </div>
@@ -60,7 +60,7 @@
     {% endblock %}
 
     {% for id in ids %}
-        <div id="{{id}}"></div>
+        <div style="margin: 20px 0" id="{{id}}"></div>
     {% endfor %}
 </div>
 
