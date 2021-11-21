@@ -103,13 +103,14 @@ def build_model():
     ])
 
     parameters = {
-        'clf__estimator__n_estimators': [50, 100, 200],
-        'clf__estimator__min_samples_split': [2, 3, 4],
+        'clf__estimator__n_estimators': [100, 200],
+        'clf__estimator__min_samples_split': [2, 3],
     }
 
     cv = GridSearchCV(model, param_grid=parameters)
 
     return cv
+
 
 def evaluate_model(model, X_test, y_test, category_names):
     """
@@ -156,7 +157,7 @@ def main():
         print('Training model...')
         start_time = time.time()
         model.fit(X_train, Y_train)
-        print("\nThis took %s seconds." % (time.time() - start_time))
+        print("\nTraining took %s minutes." % int(round(((time.time() - start_time) / 60))))
 
         print('Evaluating model...')
         evaluate_model(model, X_test, Y_test, category_names)
